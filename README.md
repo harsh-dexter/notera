@@ -1,4 +1,4 @@
-# Notera - AI Meeting Assistant
+# Notera - AI Meeting Assistant 🎧📝🤖
 
 Notera is a full-stack application designed to streamline the process of analyzing audio recordings, available as both a web application and a cross-platform desktop application (via Electron). Upload audio files or record system audio directly, and the application will automatically transcribe them in near real-time (for live recordings) or after upload, generate concise summaries, extract key action items and decisions, and allow you to interactively query the transcript content.
 
