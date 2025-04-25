@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+python-multipart
+openai-whisper
+torch
+fpdf2
+langchain
+langchain-community
+ollama
+langchain-openai
+python-dotenv
+gunicorn
+chromadb
+sentence-transformers
+langchain-huggingface # Added for updated HuggingFaceEmbeddings
+websockets

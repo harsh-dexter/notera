@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020", // Target modern ECMAScript features supported by recent Electron versions
+    "module": "CommonJS", // Electron main process uses CommonJS modules
+    "lib": ["ES2020"], // Include necessary ES libraries
+    "outDir": "./dist-electron", // Output directory for compiled JS
+    "rootDir": "./electron", // Root directory of source TS files
+    "strict": true, // Enable all strict type-checking options
+    "esModuleInterop": true, // Enables compatibility with CommonJS modules
+    "skipLibCheck": true, // Skip type checking of declaration files
+    "forceConsistentCasingInFileNames": true, // Disallow inconsistently-cased references to the same file
+    "resolveJsonModule": true, // Allow importing JSON files
+    "moduleResolution": "node", // Use Node.js module resolution strategy
+    "sourceMap": true // Generate source maps for debugging
+    // Removed composite and isolatedModules flags
+  },
+  "include": [
+    "electron/**/*.ts", // Include all .ts files in the electron directory
+    "src/types/mic.d.ts" // Include the type declaration for 'mic'
+   ],
+  "exclude": ["node_modules"] // Exclude node_modules
+}

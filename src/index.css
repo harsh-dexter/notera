@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Base colors - Light Gray Background */
+    --background: 210 40% 98%; /* Light cool gray */
+    --foreground: 222.2 84% 4.9%; /* Dark text */
+
+    /* Card colors - White Card */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    /* Popover colors - White Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Primary colors - Blue */
+    --primary: 217 91% 60%; /* Blue */
+    --primary-foreground: 210 40% 98%; /* Light text on blue */
+
+    /* Secondary colors - Neutral Gray */
+    --secondary: 210 40% 96%; /* Lighter gray */
+    --secondary-foreground: 222.2 47.4% 11.2%; /* Dark text on gray */
+
+    /* Muted colors */
+    --muted: 210 40% 96%; /* Same Lighter gray */
+    --muted-foreground: 215.4 16.3% 46.9%; /* Gray text */
+
+    /* Accent colors - Slightly Darker Neutral Gray */
+    --accent: 210 40% 90%; /* Slightly darker gray */
+    --accent-foreground: 222.2 47.4% 11.2%; /* Dark text */
+
+    /* Destructive colors */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border, input, and ring colors */
+    --border: 214.3 31.8% 91.4%; /* Light gray border */
+    --input: 214.3 31.8% 91.4%; /* Light gray input */
+    --ring: 217 91% 60%; /* Blue ring */
+
+    /* Border radius - Larger */
+    --radius: 1rem; /* Corresponds to rounded-2xl */
+
+    /* Sidebar colors - Updated for consistency */
+    --sidebar-background: 210 40% 99%; /* Very light gray */
+    --sidebar-foreground: 222.2 47.4% 11.2%; /* Dark text */
+    --sidebar-primary: 217 91% 60%; /* Blue */
+    --sidebar-primary-foreground: 210 40% 98%; /* Light text on blue */
+    --sidebar-accent: 210 40% 90%; /* Slightly darker gray */
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%; /* Dark text */
+    --sidebar-border: 214.3 31.8% 91.4%; /* Light gray border */
+    --sidebar-ring: 217 91% 60%; /* Blue ring */
+  }
+
+  .dark {
+    /* Base colors - Softer Dark Gray Background */
+    --background: 220 13% 11%; /* Darker Gray */
+    --foreground: 210 40% 98%; /* Light text */
+
+    /* Card colors - Slightly Lighter Dark Gray */
+    --card: 220 13% 15%; /* Lighter Gray */
+    --card-foreground: 210 40% 98%;
+
+    /* Popover colors - Slightly Lighter Dark Gray */
+    --popover: 220 13% 15%; /* Lighter Gray */
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary colors - Blue (adjusted slightly for dark bg) */
+    --primary: 217 91% 65%; /* Slightly brighter blue */
+    --primary-foreground: 210 40% 98%; /* Light text on blue */
+
+    /* Secondary colors - Medium Dark Gray */
+    --secondary: 217 10% 20%; /* Medium Dark Gray */
+    --secondary-foreground: 210 40% 98%; /* Light text on gray */
+
+    /* Muted colors */
+    --muted: 217 10% 20%; /* Same Medium Dark Gray */
+    --muted-foreground: 215 20.2% 65.1%; /* Lighter gray text */
+
+    /* Accent colors - Slightly Lighter Medium Dark Gray */
+    --accent: 217 10% 25%; /* Slightly lighter medium dark gray */
+    --accent-foreground: 210 40% 98%; /* Light text */
+
+    /* Destructive colors */
+    --destructive: 0 72% 51%; /* Brighter red */
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border, input, and ring colors */
+    --border: 217 10% 20%; /* Medium Dark Gray border */
+    --input: 217 10% 22%; /* Slightly lighter input */
+    --ring: 217 91% 65%; /* Brighter Blue ring */
+
+    /* Border radius - Larger (Inherited from :root, but can be overridden if needed) */
+    /* --radius: 1rem; */
+
+    /* Sidebar colors - Updated for softer dark consistency */
+    --sidebar-background: 220 13% 10%; /* Darkest Gray */
+    --sidebar-foreground: 210 40% 98%; /* Light text */
+    --sidebar-primary: 217 91% 65%; /* Brighter Blue */
+    --sidebar-primary-foreground: 210 40% 98%; /* Light text on blue */
+    --sidebar-accent: 217 10% 25%; /* Slightly lighter medium dark gray */
+    --sidebar-accent-foreground: 210 40% 98%; /* Light text */
+    --sidebar-border: 217 10% 20%; /* Medium Dark Gray border */
+    --sidebar-ring: 217 91% 65%; /* Brighter Blue ring */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Hide default browser search input cancel button */
+.hide-default-search-cancel::-webkit-search-cancel-button,
+.hide-default-search-cancel::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}

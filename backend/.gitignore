@@ -1,0 +1,37 @@
+# Python cache files - cover all subdirectories
+**/__pycache__/
+**/*.py[cod]
+**/$py.class
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Uploads and generated content
+uploads/
+generated_pdfs/
+
+# Database files
+db_data/
+*.db
+*.sqlite3
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
