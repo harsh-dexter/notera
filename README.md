@@ -1,11 +1,12 @@
-# Notera - AI Meeting Assistant 🎧📝🤖
+# **<img src="https://github.com/user-attachments/assets/ed01ea11-ee10-4ff1-be70-df11a13b8fc3" alt="Notera Logo" width="22" style="vertical-align: bottom;"> Notera - AI Meeting Assistant 🎧📝🤖**
+
 
 Notera is a full-stack application designed to streamline the process of analyzing audio recordings, available as both a web application and a cross-platform desktop application (via Electron). Upload audio files or record system audio directly, and the application will automatically transcribe them in near real-time (for live recordings) or after upload, generate concise summaries, extract key action items and decisions, and allow you to interactively query the transcript content.
 
 ![image](https://github.com/user-attachments/assets/773a4138-8cd8-44e4-8d7f-a3e2e9cf5add)
 
 
-## Features
+## ✨Features
 
 *   **Audio Upload:** Supports various audio formats for upload.
 *   **Live System Audio Recording:** Record audio directly from your system's output (e.g., online meetings, videos) using the desktop app.
@@ -20,7 +21,7 @@ Notera is a full-stack application designed to streamline the process of analyzi
 *   **Modern UI:** Built with React, Vite, TypeScript, and shadcn-ui for a clean and responsive user experience.
 *   **Desktop Application:** Packaged with Electron for cross-platform desktop use (Windows, macOS, Linux).
 
-## Tech Stack
+## 🛠️Tech Stack
 
 | Category          | Technology/Library                                      |
 | :---------------- | :------------------------------------------------------ |
@@ -37,7 +38,7 @@ Notera is a full-stack application designed to streamline the process of analyzi
 | **PDF Generation**| FPDF2                                                   |
 | **Serving**       | Uvicorn (Development), Gunicorn (Production)            |
 
-## Prerequisites
+## 🔑Prerequisites
 
 Ensure the following are installed on your system:
 
@@ -62,7 +63,7 @@ Ensure the following are installed on your system:
         ```
 8.  **(Optional) Git:** For cloning the repository.
 
-## Setup Instructions
+## ⚙️Setup Instructions
 
 1.  **Clone the Repository:**
     ```bash
@@ -148,7 +149,7 @@ Ensure the following are installed on your system:
         3.  Run the server from the `backend` directory: `chroma run --path ./vector_db --host localhost --port 8000` (adjust host/port if needed).
         4.  Update `backend/.env`: Set `CHROMA_USE_HTTP=true` and configure `CHROMA_SERVER_HOST` and `CHROMA_SERVER_PORT` (default is 8000).
 
-## Running for Development
+## ⚡Running for Development
 
 Run the backend and the Electron app concurrently in separate terminals.
 
@@ -171,7 +172,7 @@ Run the backend and the Electron app concurrently in separate terminals.
         ```
     *   This command first builds the Electron main process code (`build:electron` script) and then starts the Electron application (`electron .`), which loads the frontend from the `dist/` directory (built previously or via `npm run build`).
 
-## Building the Desktop Application
+## 💻Building the Desktop Application
 
 To create distributable packages for Windows, macOS, or Linux:
 
@@ -187,7 +188,7 @@ To create distributable packages for Windows, macOS, or Linux:
     *   Uses `electron-builder` to package the application based on your OS and configuration in `package.json` (you might need to add specific build targets there).
 3.  **Find Packages:** The distributable files (e.g., `.exe`, `.dmg`, `.AppImage`) will be located in the `release/` directory (or as configured in `package.json`).
 
-## Project Structure
+## 🗂️Project Structure
 
 ```
 notera/
