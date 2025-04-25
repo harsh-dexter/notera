@@ -2,6 +2,9 @@
 
 Notera is a full-stack application designed to streamline the process of analyzing audio recordings, available as both a web application and a cross-platform desktop application (via Electron). Upload audio files or record system audio directly, and the application will automatically transcribe them in near real-time (for live recordings) or after upload, generate concise summaries, extract key action items and decisions, and allow you to interactively query the transcript content.
 
+![image](https://github.com/user-attachments/assets/773a4138-8cd8-44e4-8d7f-a3e2e9cf5add)
+
+
 ## Features
 
 *   **Audio Upload:** Supports various audio formats for upload.
