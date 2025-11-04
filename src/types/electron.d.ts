@@ -5,7 +5,7 @@ interface ElectronAPI {
 
   // Recording functions
   getRecordingDevices: () => Promise<AudioDevice[]>;
-  startRecording: (deviceId: string, deviceName: string) => void; // Expects ID and Name
+  startRecording: () => void; // No longer needs deviceId/deviceName
   stopRecording: () => void; // Takes no args, returns void
   onRecordingStatus: (callback: (status: 'stopped' | 'error', message?: string) => void) => () => void; // Listener for stopped/error
   onRecordingStarted: (callback: (meetingId: string) => void) => () => void; // Listener for started + meetingId
@@ -17,8 +17,8 @@ declare global {
   // Define the structure for audio devices returned by the main process
   // Use the exact casing returned by PowerShell (Name, ID)
   interface AudioDevice {
-    Name: string; // Uppercase N
-    ID: string;   // Uppercase ID
+    name: string; // Uppercase N
+    id: string;   // Uppercase ID
   }
 
   interface Window {

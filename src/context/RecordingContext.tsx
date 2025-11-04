@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 interface RecordingContextType {
   isLiveRecording: boolean;
   liveMeetingId: string | null;
-  startLiveRecording: (deviceId: string, deviceName: string) => void;
+  startLiveRecording: () => void; // No longer needs deviceId/deviceName
   stopLiveRecording: () => void;
   recordingError: string | null;
 }
@@ -65,12 +65,12 @@ export const RecordingProvider: React.FC<RecordingProviderProps> = ({ children }
     };
   }, [navigate]); // Add navigate back to dependency array
 
-  const startLiveRecording = useCallback((deviceId: string, deviceName: string) => {
+  const startLiveRecording = useCallback(() => {
     if (isLiveRecording || !window.electronAPI) return;
     console.log("RecordingContext: Requesting start recording...");
     setRecordingError(null); // Clear previous errors
     // We don't set isLiveRecording=true here; we wait for the 'recording-started' event
-    window.electronAPI.startRecording(deviceId, deviceName);
+    window.electronAPI.startRecording();
   }, [isLiveRecording]);
 
   const stopLiveRecording = useCallback(() => {

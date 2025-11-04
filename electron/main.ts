@@ -11,42 +11,12 @@ import FormData from 'form-data'; // Added for sending files
 // Backend base URL (should match backend config)
 const BACKEND_BASE_URL = "http://localhost:7000";
 
-// --- WAV Header Helper ---
-function createWavHeader(dataLength: number, sampleRate: number, channels: number, bitsPerSample: number): Buffer {
-  const buffer = Buffer.alloc(44);
-  const byteRate = sampleRate * channels * (bitsPerSample / 8);
-  const blockAlign = channels * (bitsPerSample / 8);
-
-  // RIFF chunk descriptor
-  buffer.write('RIFF', 0);
-  buffer.writeUInt32LE(36 + dataLength, 4); // ChunkSize
-  buffer.write('WAVE', 8);
-
-  // fmt sub-chunk
-  buffer.write('fmt ', 12);
-  buffer.writeUInt32LE(16, 16); // Subchunk1Size (16 for PCM)
-  buffer.writeUInt16LE(1, 20); // AudioFormat (1 for PCM)
-  buffer.writeUInt16LE(channels, 22); // NumChannels
-  buffer.writeUInt32LE(sampleRate, 24); // SampleRate
-  buffer.writeUInt32LE(byteRate, 28); // ByteRate
-  buffer.writeUInt16LE(blockAlign, 32); // BlockAlign
-  buffer.writeUInt16LE(bitsPerSample, 34); // BitsPerSample
-
-  // data sub-chunk
-  buffer.write('data', 36);
-  buffer.writeUInt32LE(dataLength, 40); // Subchunk2Size
-
-  return buffer;
-}
-
 // --- Recording State Variables ---
-let soxProcess: ChildProcessWithoutNullStreams | null = null;
+let recorderProcess: ChildProcessWithoutNullStreams | null = null;
 let currentSessionPath: string | null = null;
 let currentMeetingId: string | null = null; // Store the ID for the live meeting
 let chunkCounter = 0;
 const TEMP_RECORDING_DIR = path.join(app.getAppPath(), 'temp_recording_chunks');
-// Set the chunk duration in seconds
-const chunkDurationInSeconds = 5;
 
 
 // Set AppUserModelID for Windows notifications and taskbar grouping
@@ -160,14 +130,14 @@ async function finalizeMeetingOnBackend(meetingId: string) {
 
 // --- Recording Functions ---
 
-async function startRecording(deviceName: string) { // Make async to await backend call
-  // Check if a SoX process is already running
-  if (soxProcess) {
+async function startRecording() { // No longer needs deviceName
+  // Check if a recorder process is already running
+  if (recorderProcess) {
     console.warn('Recording is already in progress.');
     return;
   }
 
-  console.log(`Attempting to start recording on device: ${deviceName}`);
+  console.log(`Attempting to start recording...`);
 
   // 1. Create Live Meeting Record in Backend
   try {
@@ -212,116 +182,73 @@ async function startRecording(deviceName: string) { // Make async to await backe
     return;
   }
 
-  // --- Use SoX via child_process ---
-  const soxPath = "C:\\Program Files (x86)\\sox-14-4-2\\sox.exe"; // Assuming standard install path
-  const sampleRate = 44100;
-  const bitsPerSample = 16;
-  const channels = 1; // MONO
-
-  // Arguments for SoX:
-  // -t waveaudio: Input type is Windows audio device
-  // "{deviceName}": The ID of the device to capture (passed from renderer)
-  // -t wav: Output type is WAV
-  // -r {sampleRate}: Output sample rate
-  // -c {channels}: Output channels (1 for mono)
-  // -b {bitsPerSample}: Output bit depth
-  // -: Output to stdout
-  const soxArgs = [
-      '-t', 'waveaudio', deviceName, // Use device ID directly
-      '-t', 'wav',
-      '-r', String(sampleRate),
-      '-c', String(channels),
-      '-b', String(bitsPerSample),
-      '-' // Output to stdout
+  // --- Use Python soundcard script via child_process ---
+  const pythonScriptPath = path.join(__dirname, 'record_soundcard.py');
+  const pythonArgs = [
+    pythonScriptPath,
+    currentMeetingId!,
+    currentSessionPath!,
+    '3600', // Optional duration in seconds
   ];
 
-  console.log(`Spawning SoX: ${soxPath} ${soxArgs.join(' ')}`);
+  console.log(`Spawning Python: python3 ${pythonArgs.join(' ')}`);
 
   try {
-    soxProcess = spawn(soxPath, soxArgs);
+    recorderProcess = spawn('backend/.venv/bin/python', pythonArgs);
 
-    const audioInputStream = soxProcess.stdout; // Get audio data from SoX stdout
-
-    // --- Stream Handling (same logic as before, but using audioInputStream from SoX) ---
-    let chunkBuffer = Buffer.alloc(0);
-    const chunkSizeInBytes = sampleRate * (bitsPerSample / 8) * channels * chunkDurationInSeconds;
-
-    audioInputStream.on('data', (data: Buffer) => {
-      // The first 44 bytes from SoX WAV output might be the header, skip it?
-      // Let's assume for now SoX pipes raw PCM data when outputting WAV to stdout ('-')
-      // If chunks sound bad, we might need to inspect/skip the header here.
-      chunkBuffer = Buffer.concat([chunkBuffer, data]);
-
-      // Process full chunks
-      while (chunkBuffer.length >= chunkSizeInBytes) {
-        const chunkToWrite = chunkBuffer.subarray(0, chunkSizeInBytes);
-        chunkBuffer = chunkBuffer.subarray(chunkSizeInBytes); // Keep the remainder
-
-        chunkCounter++;
-        const chunkFileName = `chunk-${String(chunkCounter).padStart(5, '0')}.wav`; // Save as WAV
-        const chunkFilePath = path.join(currentSessionPath!, chunkFileName);
-
-        // Create WAV header for this chunk
-        // Parameters from micOptions: 44100 Hz, 1 channel (Mono), 16 bits
-        const header = createWavHeader(chunkToWrite.length, sampleRate, channels, bitsPerSample);
-
-        // Combine header and raw PCM data
-        const wavData = Buffer.concat([header, chunkToWrite]);
-
-        // Write the complete WAV chunk data
-        fs.writeFile(chunkFilePath, wavData, (writeErr) => {
-          if (writeErr) {
-            console.error(`Error writing WAV chunk ${chunkFileName}:`, writeErr);
-          } else {
-            // console.log(`Saved WAV chunk: ${chunkFileName}`);
-            // After saving, send the chunk to the backend
-            if (currentMeetingId) {
-                // Pass the current chunkCounter as the chunkIndex
-                sendChunkToBackend(chunkFilePath, currentMeetingId, chunkFileName, chunkCounter);
-            } else {
-                console.error("Cannot send chunk, currentMeetingId is null.");
-            }
+    // Listen to stdout for "WROTE" messages
+    recorderProcess.stdout.on('data', (data: Buffer) => {
+      const output = data.toString().trim();
+      const lines = output.split('\n');
+      lines.forEach(line => {
+        if (line.startsWith('WROTE')) {
+          const filePath = line.split(' ')[1];
+          if (filePath && currentMeetingId) {
+            const fileName = path.basename(filePath);
+            const chunkIndex = parseInt(fileName.split('_').pop()?.split('.')[0] || '0', 10);
+            console.log(`Python script wrote chunk: ${filePath}`);
+            sendChunkToBackend(filePath, currentMeetingId, fileName, chunkIndex);
           }
-        });
-      }
+        }
+      });
     });
 
-    // Handle SoX process errors and exit
-    soxProcess.stderr.on('data', (data) => {
-      console.error(`SoX stderr: ${data}`);
+    // Handle Python process errors and exit
+    recorderProcess.stderr.on('data', (data) => {
+      console.error(`Python stderr: ${data}`);
       // Consider stopping recording and notifying renderer on significant errors
     });
 
-    soxProcess.on('error', (err) => {
-      console.error('Failed to start SoX process:', err);
-      stopRecording(); // Stop if SoX fails to start
+    recorderProcess.on('error', (err) => {
+      console.error('Failed to start Python process:', err);
+      stopRecording(); // Stop if Python fails to start
       // Notify renderer
        BrowserWindow.getAllWindows().forEach(win => {
-         win.webContents.send('recording-status', 'error', 'Failed to start SoX');
+         win.webContents.send('recording-status', 'error', 'Failed to start Python recorder');
        });
     });
 
-    soxProcess.on('close', (code) => {
-      console.log(`SoX process exited with code ${code}`);
+    recorderProcess.on('close', (code) => {
+      console.log(`Python process exited with code ${code}`);
       // If recording wasn't stopped manually, this indicates an unexpected exit
-      if (soxProcess) { // Check if it wasn't already cleared by stopRecording
-         console.warn('SoX process closed unexpectedly.');
+      if (recorderProcess) { // Check if it wasn't already cleared by stopRecording
+         console.warn('Python process closed unexpectedly.');
          stopRecording(); // Ensure cleanup and notify renderer
          BrowserWindow.getAllWindows().forEach(win => {
-           win.webContents.send('recording-status', 'error', `SoX exited unexpectedly (code ${code})`);
+           win.webContents.send('recording-status', 'error', `Recorder exited unexpectedly (code ${code})`);
          });
       }
     });
 
-    console.log('SoX process spawned, recording should start.');
+    console.log('Python process spawned, recording should start.');
     // Notify renderer that recording has started, including the meeting ID
     BrowserWindow.getAllWindows().forEach(win => {
        win.webContents.send('recording-started', currentMeetingId); // Send specific event with ID
     });
 
   } catch (error) {
-    console.error(`Failed to spawn SoX process: ${error}`);
-    soxProcess = null; // Ensure process handle is cleared
+    console.error(`Failed to spawn Python process: ${error}`);
+    recorderProcess = null; // Ensure process handle is cleared
     currentSessionPath = null;
      // Notify renderer about the error?
       BrowserWindow.getAllWindows().forEach(win => {
@@ -331,22 +258,22 @@ async function startRecording(deviceName: string) { // Make async to await backe
 }
 
 function stopRecording() {
-  if (!soxProcess) { // Check if SoX process exists
+  if (!recorderProcess) { // Check if recorder process exists
     console.warn('Recording is not currently in progress.');
     return;
   }
 
-  console.log('Attempting to stop recording (killing SoX process)...');
+  console.log('Attempting to stop recording (killing Python process)...');
   try {
-    soxProcess.kill('SIGTERM'); // Send termination signal to SoX
-    console.log('Sent SIGTERM to SoX process.');
+    recorderProcess.kill('SIGTERM'); // Send termination signal to Python
+    console.log('Sent SIGTERM to Python process.');
 
     // Process any remaining data in the buffer? (For simplicity, we discard it for now)
 
     // Clean up state
     const stoppedSessionPath = currentSessionPath;
     const stoppedMeetingId = currentMeetingId; // Store ID before clearing
-    soxProcess = null;
+    recorderProcess = null;
     currentSessionPath = null;
     chunkCounter = 0;
     currentMeetingId = null; // Clear the current meeting ID
@@ -366,9 +293,9 @@ function stopRecording() {
     });
 
   } catch (error) {
-    console.error(`Error stopping SoX process: ${error}`);
+    console.error(`Error stopping Python process: ${error}`);
     // Force cleanup state even if stop fails
-    soxProcess = null;
+    recorderProcess = null;
     currentSessionPath = null;
     chunkCounter = 0;
   }
@@ -376,14 +303,10 @@ function stopRecording() {
 
 
 // --- IPC Handlers for Recording Control ---
-ipcMain.on('start-recording', (_event, deviceId, deviceName) => { // Expect both ID and Name now
-  if (!deviceId || !deviceName) {
-     console.error('IPC: Start recording request received without device ID or name.');
-     return;
-  }
-  console.log(`IPC: Received start recording request for device Name: ${deviceName} (ID: ${deviceId})`);
-  // Pass the NAME to the startRecording function, as SoX seems to prefer it
-  startRecording(deviceName);
+ipcMain.on('start-recording', () => {
+  console.log(`IPC: Received start recording request.`);
+  // The new python script handles device selection automatically
+  startRecording();
 });
 
 ipcMain.on('stop-recording', () => {
@@ -393,52 +316,86 @@ ipcMain.on('stop-recording', () => {
 
 // --- Function to get recording devices using PowerShell ---
 async function getRecordingDevices(): Promise<{ name: string; id: string }[]> {
-  // Only run on Windows
-  if (process.platform !== 'win32') {
-    console.warn('Audio device listing is only supported on Windows.');
-    return [];
-  }
+  if (process.platform === 'win32') {
+    const command =
+      "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"Get-AudioDevice -List | Where-Object {$_.Type -eq 'Recording'} | Select-Object -Property Name, ID | ConvertTo-Json -Compress\"";
 
-  const command = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"Get-AudioDevice -List | Where-Object {$_.Type -eq 'Recording'} | Select-Object -Property Name, ID | ConvertTo-Json -Compress\"";
-
-  return new Promise((resolve, reject) => {
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error executing PowerShell command: ${error.message}`);
-        console.error(`Stderr: ${stderr}`);
-        // Attempt to provide a more user-friendly error or fallback
-        if (stderr.includes("Get-AudioDevice") && stderr.includes("not recognized")) {
-           console.error("Get-AudioDevice cmdlet not found. Ensure the 'AudioDeviceCmdlets' module is installed: Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser");
-           // Potentially return a specific error indicator or empty array
-           return reject(new Error("AudioDeviceCmdlets module not found. Please install it."));
+    return new Promise((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error executing PowerShell command: ${error.message}`);
+          console.error(`Stderr: ${stderr}`);
+          if (
+            stderr.includes('Get-AudioDevice') &&
+            stderr.includes('not recognized')
+          ) {
+            console.error(
+              "Get-AudioDevice cmdlet not found. Ensure the 'AudioDeviceCmdlets' module is installed: Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser"
+            );
+            return reject(
+              new Error('AudioDeviceCmdlets module not found. Please install it.')
+            );
+          }
+          return reject(error);
         }
-        return reject(error); // Reject with the original error for other issues
-      }
-      if (stderr) {
-        console.warn(`PowerShell stderr: ${stderr}`); // Log warnings but proceed if stdout is valid
-      }
-
-      console.log("Raw PowerShell stdout:", stdout); // Log raw output
-
-      try {
-        // Trim stdout to remove potential trailing newlines before parsing
-        const trimmedStdout = stdout.trim();
-        if (!trimmedStdout) {
-           console.warn("PowerShell stdout is empty after trimming.");
-           return resolve([]); // Resolve with empty array if output is empty
+        if (stderr) {
+          console.warn(`PowerShell stderr: ${stderr}`);
         }
-        const devices = JSON.parse(trimmedStdout);
-        console.log("Parsed devices:", JSON.stringify(devices, null, 2)); // Log parsed output
 
-        // Ensure it's an array, PowerShell might return single object if only one device
-        resolve(Array.isArray(devices) ? devices : [devices]);
-      } catch (parseError) {
-        console.error(`Error parsing PowerShell output: ${parseError}`);
-        console.error(`Raw stdout: ${stdout}`); // Log raw output for debugging
-        reject(parseError);
-      }
+        console.log('Raw PowerShell stdout:', stdout);
+
+        try {
+          const trimmedStdout = stdout.trim();
+          if (!trimmedStdout) {
+            console.warn('PowerShell stdout is empty after trimming.');
+            return resolve([]);
+          }
+          const devices = JSON.parse(trimmedStdout);
+          console.log('Parsed devices:', JSON.stringify(devices, null, 2));
+          resolve(Array.isArray(devices) ? devices : [devices]);
+        } catch (parseError) {
+          console.error(`Error parsing PowerShell output: ${parseError}`);
+          console.error(`Raw stdout: ${stdout}`);
+          reject(parseError);
+        }
+      });
     });
-  });
+  } else if (process.platform === 'linux') {
+    return new Promise((resolve, reject) => {
+      exec('arecord -l', (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error executing arecord: ${error.message}`);
+          return reject(error);
+        }
+        if (stderr) {
+          console.error(`arecord stderr: ${stderr}`);
+        }
+        const devices = stdout
+          .split('\n')
+          .filter((line) => line.startsWith('card'))
+          .map((line) => {
+            const match = line.match(/card (\d+): (.+?) \[(.+?)\], device (\d+):/);
+            if (match) {
+              const card = match[1];
+              const deviceName = match[2];
+              const device = match[4];
+              return {
+                name: `${deviceName} (hw:${card},${device})`,
+                id: `hw:${card},${device}`,
+              };
+            }
+            return null;
+          })
+          .filter((device) => device !== null) as { name: string; id: string }[];
+        resolve(devices);
+      });
+    });
+  } else {
+    console.warn(
+      `Audio device listing not supported on ${process.platform}.`
+    );
+    return Promise.resolve([]);
+  }
 }
 
 

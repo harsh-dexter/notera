@@ -13,4 +13,8 @@ gunicorn
 chromadb
 sentence-transformers
 langchain-huggingface # Added for updated HuggingFaceEmbeddings
+langchain-text-splitters
 websockets
+soundcard
+numpy
+soundfile

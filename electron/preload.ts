@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // --- Recording ---
   getRecordingDevices: (): Promise<AudioDevice[]> => ipcRenderer.invoke('get-recording-devices'), // Uses global AudioDevice
-  startRecording: (deviceId: string, deviceName: string) => ipcRenderer.send('start-recording', deviceId, deviceName), // Send both ID and Name
+  startRecording: () => ipcRenderer.send('start-recording'), // No longer needs deviceId/deviceName
   stopRecording: () => ipcRenderer.send('stop-recording'),
   // Listener for general status updates (stopped, error)
   onRecordingStatus: (callback: (status: 'stopped' | 'error', message?: string) => void) => {

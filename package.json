@@ -6,12 +6,12 @@
   "main": "dist-electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "build:electron": "npx tsc --project tsconfig.electron.json && node -e \"require('fs').renameSync('dist-electron/main.js', 'dist-electron/main.cjs')\"",
+    "build:electron": "npx tsc --project tsconfig.electron.json && node -e \"require('fs').renameSync('dist-electron/main.js', 'dist-electron/main.cjs')\" && cp electron/record_soundcard.py dist-electron/record_soundcard.py",
     "build": "npm run build:electron && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "electron:dev": "npm run build:electron && electron .",
+    "electron:dev": "npm run build && electron .",
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {

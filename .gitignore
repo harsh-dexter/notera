@@ -7,7 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 backend/venv
+backend/.venv
 backend/.env
+
 backend/**/__pycache__/
 fluent_office
 generated_pdfs
@@ -15,6 +17,9 @@ db_data
 node_modules
 dist
 dist-ssr
+dist-electron
+yarn.lock
+package-lock.json
 *.local
 uploads
 vector_db
